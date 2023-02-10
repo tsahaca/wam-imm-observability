@@ -35,9 +35,15 @@ public class TradeService {
                 .pfNumber(tradeVO.getPfNumber())
                 .parAmount(tradeVO.getParAmount())
                 .build();
-        tradeRepository.save(trade);
-        kafkaTemplate.send(this.topic, tradeVO);
-        return tradeVO;
+        Trade newTrade = tradeRepository.save(trade);
+        TradeVO newTradeVO = TradeVO.builder()
+                        .tradeId(newTrade.getTradeId())
+                .assetId(newTrade.getAssetId())
+                .pfNumber(newTrade.getPfNumber())
+                .parAmount(newTrade.getParAmount())
+                .build();
+        kafkaTemplate.send(this.topic, newTradeVO);
+        return newTradeVO;
     }
 
     public TradeVO getTrade(long tradeId) {

@@ -1,13 +1,16 @@
 package com.westernasset.imm.tracing.restcontroller;
 
+
 import com.westernasset.imm.tracing.data.TradeVO;
 import com.westernasset.imm.tracing.service.TradeService;
+
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,6 +26,9 @@ import org.springframework.web.util.UriComponentsBuilder;
 import javax.validation.Valid;
 import java.net.URI;
 import java.util.List;
+import io.opentelemetry.api.trace.Span;
+
+
 
 @Slf4j
 @RestController
@@ -35,6 +41,9 @@ public class TradeController {
     private static final String JSON = MediaType.APPLICATION_JSON_VALUE;
 
     private final TradeService tradeService;
+
+
+
 
     @Operation(summary = "Create Trade")
     @ApiResponses(value = {
@@ -52,6 +61,15 @@ public class TradeController {
                 .path("/trades/{tradeId}")
                 .buildAndExpand(newTradeVO.getTradeId())
                 .toUri();
+
+        //Get current Span
+        Span span = Span.current();
+        log.info("CURRENT SPAN_ID={}", span.getSpanContext().getSpanId());
+        //Add custom attributes to Span
+        span.setAttribute("trade_id", newTradeVO.getTradeId());
+        log.info("NEW TRADE_ID={}", newTradeVO.getTradeId());
+
+
         return ResponseEntity.created(location)
                 .contentType(MediaType.valueOf(MediaType.APPLICATION_JSON_VALUE))
                 .body(TradeVO.builder()

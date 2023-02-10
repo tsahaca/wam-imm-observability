@@ -10,4 +10,10 @@ public class AtpPostingServiceApplication {
     SpringApplication app = new SpringApplication(AtpPostingServiceApplication.class);
     app.run();
   }
+  /**
+  @Bean
+  public OpenTelemetry openTelemetry() {
+    return GlobalOpenTelemetry.get();
+  }
+  */
 }
