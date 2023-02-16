@@ -39,6 +39,7 @@ public class TradeService {
         TradeVO newTradeVO = TradeVO.builder()
                         .tradeId(newTrade.getTradeId())
                 .assetId(newTrade.getAssetId())
+                .ticketType(newTrade.getTicketType())
                 .pfNumber(newTrade.getPfNumber())
                 .parAmount(newTrade.getParAmount())
                 .build();

@@ -4,7 +4,7 @@ version: '3.3'
 services:
 
   atp-ui-service:
-    image: atp-ui-service:0.0.1-SNAPSHOT
+    build: atp-ui-service
     ports:
       - 8080:8080
     depends_on:
@@ -12,7 +12,7 @@ services:
       - kafka
 
   atp-posting-service:
-    image: atp-posting-service:0.0.1-SNAPSHOT
+    build: atp-posting-service
     ports:
       - 9085:8081
     depends_on:
@@ -26,7 +26,7 @@ services:
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
   compliance-preclear-service:
-    image: compliance-preclear-service:0.0.1-SNAPSHOT
+    build: compliance-preclear-service
     ports:
       - 9086:8082
     depends_on:
@@ -77,34 +77,14 @@ services:
     depends_on:
       - jaeger-all-in-one
 
-#  zookeeper:
-#    image: confluentinc/cp-zookeeper:latest
-#    environment:
-#      ZOOKEEPER_CLIENT_PORT: 2181
-#      ZOOKEEPER_TICK_TIME: 2000
-#    ports:
-#      - 22181:2181
-#
-#  kafka:
-#    image: confluentinc/cp-kafka:latest
-#    depends_on:
-#      - zookeeper
-#    ports:
-#      - 29092:29092
-#    environment:
-#      KAFKA_BROKER_ID: 1
-#      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
-#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
-#      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+
 
 ############# FROM WAM IMM TRADING APP DOCKER COMPOSE ##################
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.2.1
     ports:
-      - 2182:2182
+      - "2182:2182"
     environment:
       HOSTNAME: localhost
       ZOOKEEPER_SERVER_ID: 2
@@ -150,44 +130,6 @@ services:
       - "19092:19092"
       - "9092:9092"
 
-  topic-initializer:
-    image: confluentinc/cp-enterprise-kafka:7.2.1
-    hostname: localhost
-    container_name: initializer
-    depends_on:
-        - kafka
-        - zookeeper
-    command: "bash -c -a 'echo Waiting for Kafka to be ready... && \
-                         /etc/confluent/docker/configure && \
-                         cub kafka-ready -b kafka:9092 1 60 && \
-                         sleep 5 && \
-                         kafka-topics --bootstrap-server kafka:9092 --topic security-price --create --replication-factor 1 --partitions 4 && \
-                         kafka-topics --bootstrap-server kafka:9092 --topic security-analytic --create --replication-factor 1 --partitions 4 && \
-                         kafka-topics --bootstrap-server kafka:9092 --topic security --create --replication-factor 1 --partitions 4 && \
-                         kafka-topics --bootstrap-server kafka:9092 --topic fxRate --create --replication-factor 1 --partitions 4 && \
-                         kafka-topics --bootstrap-server kafka:9092 --topic position-analytics --create --replication-factor 1 --partitions 4 && \
-                         kafka-topics --bootstrap-server kafka:9092 --topic sod-eod-analytics --create --replication-factor 1 --partitions 4 && \
-                         kafka-topics --bootstrap-server kafka:9092 --topic sod --create --replication-factor 1 --partitions 4 &&  \
-                         kafka-topics --bootstrap-server kafka:9092 --topic eod --create --replication-factor 1 --partitions 4 &&  \
-                         kafka-topics --bootstrap-server kafka:9092 --topic blockorders --create --replication-factor 1 --partitions 4 &&  \
-                         kafka-topics --bootstrap-server kafka:9092 --topic portfolio-dap --create --replication-factor 1 --partitions 4 &&  \
-                         kafka-topics --bootstrap-server kafka:9092 --topic gainloss-sod --create --replication-factor 1 --partitions 4 &&  \
-                         kafka-topics --bootstrap-server kafka:9092 --topic gainloss-atp --create --replication-factor 1 --partitions 4 &&  \
-                         kafka-topics --bootstrap-server kafka:9092 --topic gain-loss --create --replication-factor 1 --partitions 4 &&  \
-                         kafka-topics --bootstrap-server kafka:9092 --topic lend-borrow --create --replication-factor 1 --partitions 4 &&  \
-                         kafka-topics --bootstrap-server kafka:9092 --topic collateral --create --replication-factor 1 --partitions 4 &&  \
-                         kafka-topics --bootstrap-server kafka:9092 --topic model-clone-lot --create --replication-factor 1 --partitions 4 &&  \
-                         kafka-topics --bootstrap-server kafka:9092 --topic atp-collateral --create --replication-factor 1 --partitions 4 &&  \
-                         kafka-topics --bootstrap-server kafka:9092 --topic position --create --replication-factor 1 --partitions 4 && \
-                         kafka-topics --bootstrap-server kafka:9092 --topic sod-eod --create --replication-factor 1 --partitions 4 && \
-                         kafka-topics --bootstrap-server kafka:9092 --topic metadata --create --replication-factor 1 --partitions 4 && \
-                         kafka-topics --bootstrap-server kafka:9092 --topic lots-manager --create --replication-factor 1 --partitions 4 '"
-
-    environment:
-        CONNECT_BOOTSTRAP_SERVERS: ignored
-        KAFKA_ZOOKEEPER_CONNECT: ignored
-        KAFKA_ADVERTISED_LISTENERS: ignored
-
   schema-registry:
       image: confluentinc/cp-schema-registry:7.2.1
       restart: always
@@ -203,25 +145,30 @@ services:
       ports:
         - 8085:8085
 
-  control-center:
-    image: confluentinc/cp-enterprise-control-center:7.2.1
-    hostname: control-center
-    container_name: control-center
-    depends_on:
-      - kafka
-      - schema-registry
+  jobmanager:
+    image: flink:1.13.2-scala_2.11-java11
     ports:
-      - "9021:9021"
+      - "9081:8081"
+    command: jobmanager
     environment:
-      CONTROL_CENTER_BOOTSTRAP_SERVERS: 'kafka:9092'
-      CONTROL_CENTER_KSQL_KSQLDB1_URL: "http://ksqldb-server:8088"
-      CONTROL_CENTER_KSQL_KSQLDB1_ADVERTISED_URL: "http://localhost:8088"
-      CONTROL_CENTER_SCHEMA_REGISTRY_URL: "http://schema-registry:8085"
-      CONTROL_CENTER_REPLICATION_FACTOR: 1
-      CONTROL_CENTER_INTERNAL_TOPICS_PARTITIONS: 1
-      CONTROL_CENTER_MONITORING_INTERCEPTOR_TOPIC_PARTITIONS: 1
-      CONFLUENT_METRICS_TOPIC_REPLICATION: 1
-      PORT: 9021      -
-
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        metrics.reporters: prom
+        metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+  taskmanager:
+    image: flink:1.13.2-scala_2.11-java11
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    environment:
+        - |
+          FLINK_PROPERTIES=
+          jobmanager.rpc.address: jobmanager
+          taskmanager.numberOfTaskSlots: 8
+          parallelism.default: 4
+          metrics.reporters: prom
+          metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+          taskmanager.memory.process.size: 4g
 
 ############# END OF WAM IMM TRADING APP DOCKER COMPOSE ##############

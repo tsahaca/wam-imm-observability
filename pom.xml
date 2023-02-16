@@ -3,12 +3,14 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>2.7.0</version>
-        <relativePath/> <!-- lookup parent from repository -->
+        <relativePath/>
     </parent>
+
 
     <groupId>com.westernasset.imm.tracing</groupId>
     <artifactId>distributed-tracing</artifactId>
@@ -23,6 +25,7 @@
 
     <properties>
         <java.version>17</java.version>
+
         <spring-cloud.version>2021.0.3</spring-cloud.version>
         <spring-cloud-sleuth-otel.version>1.1.0-M6</spring-cloud-sleuth-otel.version>
         <spring-kafka.version>2.8.6</spring-kafka.version>
