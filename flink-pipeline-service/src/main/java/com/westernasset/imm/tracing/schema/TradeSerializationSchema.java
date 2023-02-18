@@ -1,5 +1,6 @@
 package com.westernasset.imm.tracing.schema;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.westernasset.imm.tracing.model.TradeVO;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.serialization.SerializationSchema;
@@ -13,9 +14,7 @@ import org.slf4j.LoggerFactory;
 
 @Slf4j
 public class TradeSerializationSchema implements SerializationSchema<TradeVO> {
-
-    static ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-
+    static ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule()).configure(DeserializationFeature. FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @Override
     public byte[] serialize(TradeVO trade) {

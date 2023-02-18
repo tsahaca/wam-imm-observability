@@ -1,0 +1,20 @@
+server:
+  port: 9080
+  servlet:
+    context-path: /
+
+services:
+  atp-posting-service:
+    url: http://atp-posting-otel-agent:9081/trades
+
+springdoc:
+  swagger-ui:
+    displayRequestDuration: true
+    disable-swagger-default-url: true
+    csrf:
+      enabled: true
+    operationsSorter: method #For sorting endpoints by http methods
+    tagsSorter: alpha #For sorting tags alphabetically
+  api-docs:
+    path: /api
+

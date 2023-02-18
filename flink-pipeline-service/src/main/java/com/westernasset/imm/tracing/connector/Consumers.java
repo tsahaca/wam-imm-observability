@@ -7,6 +7,8 @@ import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
 
 import java.util.Properties;
 
+
+
 public class Consumers {
 
     public static FlinkKafkaConsumer<String> createStringConsumerForTopic(String topic, String kafkaAddress, String kafkaGroup) {
@@ -24,7 +26,6 @@ public class Consumers {
         properties.setProperty("bootstrap.servers", kafkaAddress);
         properties.setProperty("group.id", kafkaGroup);
         FlinkKafkaConsumer<TradeVO> consumer = new FlinkKafkaConsumer<TradeVO>(topic, new TradeDeserializationSchema(), properties);
-
         return consumer;
     }
 }

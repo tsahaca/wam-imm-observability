@@ -15,12 +15,9 @@ import java.math.BigDecimal;
 public class TradeVO {
 
     private Long tradeId;
-
     private String ticketType;
-
     private String assetId;
-
     private String pfNumber;
-
     private BigDecimal parAmount;
+    private String status;
 }

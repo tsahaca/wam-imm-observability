@@ -3,6 +3,149 @@ version: '3.3'
 
 services:
 
+### START OF INFRASTRUCTURE ##
+
+  postgres-atp:
+    image: postgres
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=atpservice
+
+  postgres-compliance:
+      image: postgres
+      ports:
+        - 5431:5431
+      environment:
+        - POSTGRES_PASSWORD=postgres
+        - POSTGRES_USER=postgres
+        - POSTGRES_DB=complianceservice
+
+  jaeger-all-in-one:
+      image: jaegertracing/all-in-one:latest
+      ports:
+        - 16686:16686
+        - 14268
+        - 14250
+
+  otel-collector:
+      image: otel/opentelemetry-collector:0.47.0
+      command: [ "--config=/etc/otel-collector-config.yaml" ]
+      volumes:
+        - ./otel-config.yaml:/etc/otel-collector-config.yaml
+      ports:
+        - 1888:1888  # pprof extension
+        - 13133:13133 # health_check extension
+        - 4317        # OTLP gRPC receiver
+        - 55670:55679 # zpages extension
+      depends_on:
+        - jaeger-all-in-one
+
+
+
+    ############# FROM WAM IMM TRADING APP DOCKER COMPOSE ##################
+
+  zookeeper:
+      image: confluentinc/cp-zookeeper:7.2.1
+      ports:
+        - "2182:2182"
+      environment:
+        HOSTNAME: localhost
+        ZOOKEEPER_SERVER_ID: 2
+        ZOOKEEPER_CLIENT_PORT: 2182
+        ZOOKEEPER_TICK_TIME: 2000
+        ZOOKEEPER_INIT_LIMIT: 5
+        ZOOKEEPER_SYNC_LIMIT: 2
+        ZOOKEEPER_SERVERS: localhost:2889:3889
+
+  kafka:
+      image: confluentinc/cp-enterprise-kafka:7.2.1
+      container_name: kafka
+      depends_on:
+        - zookeeper
+
+      environment:
+        KAFKA_BROKER_ID: 10
+        KAFKA_ZOOKEEPER_CONNECT: zookeeper:2182
+        KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: OUTER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+        KAFKA_ADVERTISED_LISTENERS: OUTER://localhost:19092,PLAINTEXT://kafka:9092
+        KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+        KAFKA_LOG_RETENTION_MINUTES: 120 # 2 hours
+        KAFKA_LOG_RETENTION_BYTES: 262144000 # 250 MB
+        KAFKA_LOG_SEGMENT_BYTES: 524288000 # 500 MB
+        KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+        KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+        KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+        KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
+        KAFKA_MIN_ISYNC_REPLICAS: 1
+        KAFKA_LOG4J_LOGGERS: "kafka=WARN,kafka.server=WARN,kafka.controller=WARN"
+        KAFKA_LOG4J_ROOT_LOGLEVEL: "WARN"
+        KAFKA_TOOLS_LOG4J_LOGLEVEL: "ERROR"
+        KAFKA_TRANSACTION_STATE_LOG_NUM_PARTITIONS: 2
+        KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS: 2
+        CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
+        CONFLUENT_METRICS_ENABLE: 'true'
+        KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+        CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
+        CONFLUENT_METRICS_REPORTER_PUBLISH_MS: 3000
+        KAFKA_MAX_MESSAGE_BYTES: 90000000
+
+      ports:
+        - "19092:19092"
+        - "9092:9092"
+
+  schema-registry:
+      image: confluentinc/cp-schema-registry:7.2.1
+      restart: always
+      hostname: schema-registry
+      container_name: schema-registry
+      depends_on:
+        - zookeeper
+        - kafka
+      environment:
+        SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8085"
+        SCHEMA_REGISTRY_HOST_NAME: schema-registry
+        SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "PLAINTEXT://kafka:9092"
+      ports:
+        - 8085:8085
+
+  jobmanager:
+      image: flink:1.13.2-scala_2.11-java11
+      ports:
+        - "9081:8081"
+      command: jobmanager
+      environment:
+        - |
+          FLINK_PROPERTIES=
+          jobmanager.rpc.address: jobmanager
+          metrics.reporters: prom
+          metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+  taskmanager:
+      image: flink:1.13.2-scala_2.11-java11
+      depends_on:
+        - jobmanager
+      command: taskmanager
+      environment:
+        - |
+          FLINK_PROPERTIES=
+          jobmanager.rpc.address: jobmanager
+          taskmanager.numberOfTaskSlots: 8
+          parallelism.default: 4
+          metrics.reporters: prom
+          metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
+          taskmanager.memory.process.size: 4g
+        #        - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
+        - FLINK_ENV_JAVA_OPTS=-javaagent:/tmp/opentelemetry-javaagent.jar
+        - OTEL_SERVICE_NAME=FLINK_TRADE_FILTER
+        - OTEL_TRACES_EXPORTER=otlp
+        - OTEL_METRICS_EXPORTER=none
+        - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      volumes:
+        - ./otel:/tmp
+  ############# END OF INFRASTRUCTURE ##############
+
   atp-ui-service:
     build: atp-ui-service
     ports:
@@ -39,136 +182,63 @@ services:
       - SPRING_DATASOURCE_PASSWORD=postgres
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
-  postgres-atp:
-    image: postgres
+### INSTRUMENT WITH opentelemetry-javaagent.jar ####
+
+  atp-ui-otel-agent:
+    build: atp-ui-otel-agent
     ports:
-      - 5432:5432
-    environment:
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_DB=atpservice
-
-  postgres-compliance:
-    image: postgres
-    ports:
-      - 5431:5431
-    environment:
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_USER=postgres
-      - POSTGRES_DB=complianceservice
-
-  jaeger-all-in-one:
-    image: jaegertracing/all-in-one:latest
-    ports:
-      - 16686:16686
-      - 14268
-      - 14250
-
-  otel-collector:
-    image: otel/opentelemetry-collector:0.47.0
-    command: [ "--config=/etc/otel-collector-config.yaml" ]
-    volumes:
-      - ./otel-config.yaml:/etc/otel-collector-config.yaml
-    ports:
-      - 1888:1888  # pprof extension
-      - 13133:13133 # health_check extension
-      - 4317        # OTLP gRPC receiver
-      - 55670:55679 # zpages extension
-    depends_on:
-      - jaeger-all-in-one
-
-
-
-############# FROM WAM IMM TRADING APP DOCKER COMPOSE ##################
-
-  zookeeper:
-    image: confluentinc/cp-zookeeper:7.2.1
-    ports:
-      - "2182:2182"
-    environment:
-      HOSTNAME: localhost
-      ZOOKEEPER_SERVER_ID: 2
-      ZOOKEEPER_CLIENT_PORT: 2182
-      ZOOKEEPER_TICK_TIME: 2000
-      ZOOKEEPER_INIT_LIMIT: 5
-      ZOOKEEPER_SYNC_LIMIT: 2
-      ZOOKEEPER_SERVERS: localhost:2889:3889
-
-  kafka:
-    image: confluentinc/cp-enterprise-kafka:7.2.1
-    container_name: kafka
+      - 9080:9080
     depends_on:
       - zookeeper
-
+      - kafka
     environment:
-      KAFKA_BROKER_ID: 10
-      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2182
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: OUTER:PLAINTEXT,PLAINTEXT:PLAINTEXT
-      KAFKA_ADVERTISED_LISTENERS: OUTER://localhost:19092,PLAINTEXT://kafka:9092
-      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-      KAFKA_LOG_RETENTION_MINUTES: 120 # 2 hours
-      KAFKA_LOG_RETENTION_BYTES: 262144000 # 250 MB
-      KAFKA_LOG_SEGMENT_BYTES: 524288000 # 500 MB
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'false'
-      KAFKA_MIN_ISYNC_REPLICAS: 1
-      KAFKA_LOG4J_LOGGERS: "kafka=WARN,kafka.server=WARN,kafka.controller=WARN"
-      KAFKA_LOG4J_ROOT_LOGLEVEL: "WARN"
-      KAFKA_TOOLS_LOG4J_LOGLEVEL: "ERROR"
-      KAFKA_TRANSACTION_STATE_LOG_NUM_PARTITIONS: 2
-      KAFKA_OFFSETS_TOPIC_NUM_PARTITIONS: 2
-      CONFLUENT_METRICS_REPORTER_TOPIC_REPLICAS: 1
-      CONFLUENT_METRICS_ENABLE: 'true'
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      CONFLUENT_SUPPORT_CUSTOMER_ID: 'anonymous'
-      CONFLUENT_METRICS_REPORTER_PUBLISH_MS: 3000
-      KAFKA_MAX_MESSAGE_BYTES: 90000000
+      - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
+      - OTEL_SERVICE_NAME=atp-ui-otel-agent
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    volumes:
+      - ./otel:/tmp
 
+  atp-posting-otel-agent:
+    build: atp-posting-otel-agent
     ports:
-      - "19092:19092"
-      - "9092:9092"
-
-  schema-registry:
-      image: confluentinc/cp-schema-registry:7.2.1
-      restart: always
-      hostname: schema-registry
-      container_name: schema-registry
-      depends_on:
-        - zookeeper
-        - kafka
-      environment:
-        SCHEMA_REGISTRY_LISTENERS: "http://0.0.0.0:8085"
-        SCHEMA_REGISTRY_HOST_NAME: schema-registry
-        SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: "PLAINTEXT://kafka:9092"
-      ports:
-        - 8085:8085
-
-  jobmanager:
-    image: flink:1.13.2-scala_2.11-java11
-    ports:
-      - "9081:8081"
-    command: jobmanager
-    environment:
-      - |
-        FLINK_PROPERTIES=
-        jobmanager.rpc.address: jobmanager
-        metrics.reporters: prom
-        metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
-  taskmanager:
-    image: flink:1.13.2-scala_2.11-java11
+      - 9087:9081
     depends_on:
-      - jobmanager
-    command: taskmanager
+      - zookeeper
+      - kafka
+      - postgres-atp
     environment:
-        - |
-          FLINK_PROPERTIES=
-          jobmanager.rpc.address: jobmanager
-          taskmanager.numberOfTaskSlots: 8
-          parallelism.default: 4
-          metrics.reporters: prom
-          metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
-          taskmanager.memory.process.size: 4g
+      - SPRING_DATASOURCE_JDBC-URL=jdbc:postgresql://postgres-atp:5432/atpservice
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
+      - OTEL_SERVICE_NAME=atp-posting-otel-agent
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    volumes:
+      - ./otel:/tmp
 
-############# END OF WAM IMM TRADING APP DOCKER COMPOSE ##############
+  compliance-preclear-otel-agent:
+    build: compliance-preclear-otel-agent
+    ports:
+      - 9088:9082
+    depends_on:
+      - zookeeper
+      - kafka
+      - postgres-compliance
+    environment:
+      - SPRING_DATASOURCE_JDBC-URL=jdbc:postgresql://postgres-compliance:5432/complianceservice
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
+      - OTEL_SERVICE_NAME=compliance-prelear-otel-agent
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    volumes:
+      - ./otel:/tmp
+
