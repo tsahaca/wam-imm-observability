@@ -36,7 +36,8 @@ public class SubscriberController {
             @ApiResponse(responseCode = "502", description = "An error has occurred with an upstream service")
     })
 
-    @KafkaListener(topics = "orders-topic", groupId = "orders-group")
+    //@KafkaListener(topics = "orders-topic", groupId = "orders-group")
+    @KafkaListener(topics = "orders-topic")
     @PostMapping(path = "/order-operations")
     public void consumeCustomerCrudEvent(@RequestBody(required = false) TradeVO event,
                                          @Headers MessageHeaders messageHeaders) {

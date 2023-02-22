@@ -181,6 +181,7 @@ services:
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgres
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - GROUP_ID=seluth
 
 ### INSTRUMENT WITH opentelemetry-javaagent.jar ####
 
@@ -239,6 +240,7 @@ services:
       - OTEL_TRACES_EXPORTER=otlp
       - OTEL_METRICS_EXPORTER=none
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - GROUP_ID=otel
     volumes:
       - ./otel:/tmp
 

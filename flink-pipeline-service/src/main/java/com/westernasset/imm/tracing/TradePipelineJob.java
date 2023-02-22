@@ -32,7 +32,7 @@ public class TradePipelineJob {
         KafkaSource<TradeVO> source = KafkaSource.<TradeVO>builder()
                 .setBootstrapServers(bootstrapServers)
                 .setTopics(inputTopic)
-                .setGroupId("trade-group")
+                .setGroupId("flink-otel")
                 .setStartingOffsets(OffsetsInitializer.earliest())
                 .setValueOnlyDeserializer(new TradeDeserializationSchema())
                 .build();

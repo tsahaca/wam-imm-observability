@@ -12,7 +12,7 @@ services:
 kafka:
   bootstrap: kafka:9092
   topic: orders-topic
-  group: orders-group
+  group: ${GROUP_ID}
 
 springdoc:
   swagger-ui:
