@@ -5,6 +5,8 @@ import com.westernasset.imm.tracing.operator.TradeFilterOperator;
 import com.westernasset.imm.tracing.operator.TradeMapOperator;
 import com.westernasset.imm.tracing.schema.TradeDeserializationSchema;
 import com.westernasset.imm.tracing.schema.TradeSerializationSchema;
+import io.opentelemetry.api.trace.Span;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
 import org.apache.flink.api.common.functions.FilterFunction;
 import org.apache.flink.api.common.functions.MapFunction;
@@ -14,6 +16,7 @@ import org.apache.flink.streaming.api.datastream.DataStream;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaProducer;
 
+@Slf4j
 public class TradePipelineJob {
 
     final static String inputTopic = "orders-topic";
@@ -33,6 +36,10 @@ public class TradePipelineJob {
                 .setStartingOffsets(OffsetsInitializer.earliest())
                 .setValueOnlyDeserializer(new TradeDeserializationSchema())
                 .build();
+
+        Span span = Span.current();
+        log.info("TradePipelineJob TRACE_ID={}, SPAN_ID={}",  span.getSpanContext().getTraceId(),
+                span.getSpanContext().getSpanId());
 
         FlinkKafkaProducer<TradeVO> producer = new FlinkKafkaProducer<TradeVO>(bootstrapServers, outputTopic, new TradeSerializationSchema());
 
