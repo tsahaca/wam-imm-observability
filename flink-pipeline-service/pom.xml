@@ -24,6 +24,7 @@
 		<jackson.version>2.11.2</jackson.version>
 		<log4j.version>2.17.0</log4j.version>
 		<slf4j.version>1.7.7</slf4j.version>
+		<kafka.version>2.4.0</kafka.version>
 	</properties>
 	<dependencies>
 		<!-- Apache Flink dependencies -->
@@ -40,12 +41,14 @@
 			<version>${flink.version}</version>
 			<scope>provided</scope>
 		</dependency>
+       <!--
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-clients_${scala.binary.version}</artifactId>
 			<version>${flink.version}</version>
 			<scope>provided</scope>
 		</dependency>
+		-->
 
 		<!-- Add connector dependencies here. They must be in the default scope (compile). -->
 
@@ -56,12 +59,19 @@
 			<artifactId>flink-connector-kafka_${scala.binary.version}</artifactId>
 			<version>${flink.version}</version>
 		</dependency>
-		-->
+
 		<dependency>
 			<groupId>org.apache.flink</groupId>
 			<artifactId>flink-connector-kafka_${scala.binary.version}</artifactId>
 			<version>${flink.version}</version>
 		</dependency>
+-->
+		<dependency>
+			<groupId>org.apache.flink</groupId>
+			<artifactId>flink-connector-kafka_${scala.binary.version}</artifactId>
+			<version>${flink.version}</version>
+		</dependency>
+
 
 		<!-- Add logging framework, to produce console output when running in the IDE. -->
 		<!-- These dependencies are excluded from the application JAR by default. -->
@@ -133,6 +143,11 @@
 			<artifactId>opentelemetry-sdk-extension-autoconfigure</artifactId>
 			<version>1.23.0-alpha</version>
 		</dependency>
+		<dependency>
+  <groupId>io.opentelemetry.instrumentation</groupId>
+  <artifactId>opentelemetry-kafka-clients-2.6</artifactId>
+  <version>1.23.0-alpha</version>
+</dependency>
 	-->
 
 	</dependencies>

@@ -64,7 +64,8 @@ public class TradeController {
 
         //Get current Span
         Span span = Span.current();
-        log.info("CURRENT SPAN_ID={}", span.getSpanContext().getSpanId());
+        log.info("SELUTH TradeController TRACE_ID={}, SPAN_ID={}", span.getSpanContext().getTraceId(),
+                span.getSpanContext().getSpanId());
         //Add custom attributes to Span
         span.setAttribute("trade_id", newTradeVO.getTradeId());
         log.info("NEW TRADE_ID={}", newTradeVO.getTradeId());

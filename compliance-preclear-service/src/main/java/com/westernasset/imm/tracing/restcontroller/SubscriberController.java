@@ -6,6 +6,7 @@ import com.westernasset.imm.tracing.data.event.TradeWasCreated;
 import com.westernasset.imm.tracing.data.event.TradeWasDeleted;
 import com.westernasset.imm.tracing.data.event.TradeWasUpdated;
 import com.westernasset.imm.tracing.service.TradePreClearService;
+import io.opentelemetry.api.trace.Span;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -48,6 +49,13 @@ public class SubscriberController {
             log.info("header-{}: {}", key, value);
         });
         log.info("End of Received MessageHeaders: ");
+
+        /**  PRINT TRACE_ID & SPAN_ID */
+        Span span = Span.current();
+        log.info("SELUTH SubscriberController TRACE_ID={}, SPAN_ID={}", span.getSpanContext().getTraceId(), span.getSpanContext().getSpanId());
+
+
+
         try {
             String stringValue = OBJECT_MAPPER.writeValueAsString(event);
             log.info("received event {}", OBJECT_MAPPER.writeValueAsString(event));

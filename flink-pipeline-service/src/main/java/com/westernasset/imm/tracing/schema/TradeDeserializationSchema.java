@@ -3,6 +3,7 @@ package com.westernasset.imm.tracing.schema;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.westernasset.imm.tracing.model.TradeVO;
+import io.opentelemetry.api.trace.Span;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -14,6 +15,9 @@ public class TradeDeserializationSchema implements DeserializationSchema<TradeVO
 
     @Override
     public TradeVO deserialize(byte[] bytes) throws IOException {
+        Span span = Span.current();
+        log.info("TradeDeserializationSchema TRACE_ID={}, SPAN_ID={}",  span.getSpanContext().getTraceId(),
+                span.getSpanContext().getSpanId());
         return objectMapper.readValue(bytes, TradeVO.class);
     }
 

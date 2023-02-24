@@ -142,6 +142,7 @@ services:
         - OTEL_TRACES_EXPORTER=otlp
         - OTEL_METRICS_EXPORTER=none
         - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+        - OTEL_PROPAGATORS=tracecontext,b3
       volumes:
         - ./otel:/tmp
   ############# END OF INFRASTRUCTURE ##############
@@ -168,79 +169,79 @@ services:
       - SPRING_DATASOURCE_PASSWORD=postgres
       - SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
-  compliance-preclear-service:
-    build: compliance-preclear-service
-    ports:
-      - 9086:8082
-    depends_on:
-      - zookeeper
-      - kafka
-      - postgres-compliance
-    environment:
-      - SPRING_DATASOURCE_JDBC-URL=jdbc:postgresql://postgres-compliance:5432/complianceservice
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-      - GROUP_ID=seluth
+#  compliance-preclear-service:
+#    build: compliance-preclear-service
+#    ports:
+#      - 9086:8082
+#    depends_on:
+#      - zookeeper
+#      - kafka
+#      - postgres-compliance
+#    environment:
+#      - SPRING_DATASOURCE_JDBC-URL=jdbc:postgresql://postgres-compliance:5432/complianceservice
+#      - SPRING_DATASOURCE_USERNAME=postgres
+#      - SPRING_DATASOURCE_PASSWORD=postgres
+#      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+#      - GROUP_ID=seluth
 
 ### INSTRUMENT WITH opentelemetry-javaagent.jar ####
 
-  atp-ui-otel-agent:
-    build: atp-ui-otel-agent
-    ports:
-      - 9080:9080
-    depends_on:
-      - zookeeper
-      - kafka
-    environment:
-      - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
-      - OTEL_SERVICE_NAME=atp-ui-otel-agent
-      - OTEL_TRACES_EXPORTER=otlp
-      - OTEL_METRICS_EXPORTER=none
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-    volumes:
-      - ./otel:/tmp
-
-  atp-posting-otel-agent:
-    build: atp-posting-otel-agent
-    ports:
-      - 9087:9081
-    depends_on:
-      - zookeeper
-      - kafka
-      - postgres-atp
-    environment:
-      - SPRING_DATASOURCE_JDBC-URL=jdbc:postgresql://postgres-atp:5432/atpservice
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-      - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
-      - OTEL_SERVICE_NAME=atp-posting-otel-agent
-      - OTEL_TRACES_EXPORTER=otlp
-      - OTEL_METRICS_EXPORTER=none
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-    volumes:
-      - ./otel:/tmp
-
-  compliance-preclear-otel-agent:
-    build: compliance-preclear-otel-agent
-    ports:
-      - 9088:9082
-    depends_on:
-      - zookeeper
-      - kafka
-      - postgres-compliance
-    environment:
-      - SPRING_DATASOURCE_JDBC-URL=jdbc:postgresql://postgres-compliance:5432/complianceservice
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-      - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
-      - OTEL_SERVICE_NAME=compliance-prelear-otel-agent
-      - OTEL_TRACES_EXPORTER=otlp
-      - OTEL_METRICS_EXPORTER=none
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - GROUP_ID=otel
-    volumes:
-      - ./otel:/tmp
+#  atp-ui-otel-agent:
+#    build: atp-ui-otel-agent
+#    ports:
+#      - 9080:9080
+#    depends_on:
+#      - zookeeper
+#      - kafka
+#    environment:
+#      - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
+#      - OTEL_SERVICE_NAME=atp-ui-otel-agent
+#      - OTEL_TRACES_EXPORTER=otlp
+#      - OTEL_METRICS_EXPORTER=none
+#      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+#    volumes:
+#      - ./otel:/tmp
+#
+#  atp-posting-otel-agent:
+#    build: atp-posting-otel-agent
+#    ports:
+#      - 9087:9081
+#    depends_on:
+#      - zookeeper
+#      - kafka
+#      - postgres-atp
+#    environment:
+#      - SPRING_DATASOURCE_JDBC-URL=jdbc:postgresql://postgres-atp:5432/atpservice
+#      - SPRING_DATASOURCE_USERNAME=postgres
+#      - SPRING_DATASOURCE_PASSWORD=postgres
+#      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+#      - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
+#      - OTEL_SERVICE_NAME=atp-posting-otel-agent
+#      - OTEL_TRACES_EXPORTER=otlp
+#      - OTEL_METRICS_EXPORTER=none
+#      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+#    volumes:
+#      - ./otel:/tmp
+#
+#  compliance-preclear-otel-agent:
+#    build: compliance-preclear-otel-agent
+#    ports:
+#      - 9088:9082
+#    depends_on:
+#      - zookeeper
+#      - kafka
+#      - postgres-compliance
+#    environment:
+#      - SPRING_DATASOURCE_JDBC-URL=jdbc:postgresql://postgres-compliance:5432/complianceservice
+#      - SPRING_DATASOURCE_USERNAME=postgres
+#      - SPRING_DATASOURCE_PASSWORD=postgres
+#      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+#      - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
+#      - OTEL_SERVICE_NAME=compliance-prelear-otel-agent
+#      - OTEL_TRACES_EXPORTER=otlp
+#      - OTEL_METRICS_EXPORTER=none
+#      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+#      - GROUP_ID=otel
+#    volumes:
+#      - ./otel:/tmp
 

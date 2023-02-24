@@ -9,10 +9,10 @@ import org.apache.flink.api.common.functions.MapFunction;
 public class TradeMapOperator implements MapFunction<TradeVO,TradeVO> {
     @Override
     public TradeVO map(TradeVO tradeVO) throws Exception {
-        Span span = Span.current();
-        log.info("TradeMapOperator TRACE_ID={}, SPAN_ID={}, TRADE_ID={}",  span.getSpanContext().getTraceId(),
-                span.getSpanContext().getSpanId(),
-                tradeVO.getTradeId());
+//        Span span = Span.current();
+//        log.info("TradeMapOperator TRACE_ID={}, SPAN_ID={}, TRADE_ID={}",  span.getSpanContext().getTraceId(),
+//                span.getSpanContext().getSpanId(),
+//                tradeVO.getTradeId());
 
         tradeVO.setStatus("PROCESSED_BY_FLINK");
         return tradeVO;
