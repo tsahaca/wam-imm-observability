@@ -1,0 +1,1 @@
+docker run -it --network=host edenhill/kcat:1.7.1 -b localhost:19092 -C -J -t trade-output

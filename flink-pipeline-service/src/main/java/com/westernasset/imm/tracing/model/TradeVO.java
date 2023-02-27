@@ -13,7 +13,6 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @JsonSerialize
 public class TradeVO {
-
     private Long tradeId;
     private String ticketType;
     private String assetId;
