@@ -96,6 +96,24 @@ services:
         - "19092:19092"
         - "9092:9092"
 
+  topic-initializer:
+    image: confluentinc/cp-enterprise-kafka:7.2.1
+    hostname: localhost
+    container_name: initializer
+    depends_on:
+      - kafka
+      - zookeeper
+    command: "bash -c -a 'echo Waiting for Kafka to be ready... && \
+                       /etc/confluent/docker/configure && \
+                       cub kafka-ready -b kafka:9092 1 60 && \
+                       sleep 5 && \
+                       kafka-topics --bootstrap-server kafka:9092 --topic trade-output --create --replication-factor 1 --partitions 1 '"
+
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: ignored
+      KAFKA_ZOOKEEPER_CONNECT: ignored
+      KAFKA_ADVERTISED_LISTENERS: ignored
+
   schema-registry:
       image: confluentinc/cp-schema-registry:7.2.1
       restart: always
@@ -137,37 +155,37 @@ services:
           metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter
           taskmanager.memory.process.size: 4g
         #        - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
-        - FLINK_ENV_JAVA_OPTS=-javaagent:/tmp/opentelemetry-javaagent.jar
-        - OTEL_SERVICE_NAME=FLINK_TRADE_FILTER
-        - OTEL_TRACES_EXPORTER=otlp
-        - OTEL_METRICS_EXPORTER=none
-        - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+#        - FLINK_ENV_JAVA_OPTS=-javaagent:/tmp/opentelemetry-javaagent.jar
+#        - OTEL_SERVICE_NAME=FLINK_TRADE_FILTER
+#        - OTEL_TRACES_EXPORTER=otlp
+#        - OTEL_METRICS_EXPORTER=none
+#        - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
         - OTEL_PROPAGATORS=tracecontext,b3
       volumes:
         - ./otel:/tmp
   ############# END OF INFRASTRUCTURE ##############
 
-  atp-ui-service:
-    build: atp-ui-service
-    ports:
-      - 8080:8080
-    depends_on:
-      - zookeeper
-      - kafka
-
-  atp-posting-service:
-    build: atp-posting-service
-    ports:
-      - 9085:8081
-    depends_on:
-      - zookeeper
-      - kafka
-      - postgres-atp
-    environment:
-      - SPRING_DATASOURCE_JDBC-URL=jdbc:postgresql://postgres-atp:5432/atpservice
-      - SPRING_DATASOURCE_USERNAME=postgres
-      - SPRING_DATASOURCE_PASSWORD=postgres
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+#  atp-ui-service:
+#    build: atp-ui-service
+#    ports:
+#      - 8080:8080
+#    depends_on:
+#      - zookeeper
+#      - kafka
+#
+#  atp-posting-service:
+#    build: atp-posting-service
+#    ports:
+#      - 9085:8081
+#    depends_on:
+#      - zookeeper
+#      - kafka
+#      - postgres-atp
+#    environment:
+#      - SPRING_DATASOURCE_JDBC-URL=jdbc:postgresql://postgres-atp:5432/atpservice
+#      - SPRING_DATASOURCE_USERNAME=postgres
+#      - SPRING_DATASOURCE_PASSWORD=postgres
+#      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
 
 #  compliance-preclear-service:
 #    build: compliance-preclear-service
@@ -186,42 +204,42 @@ services:
 
 ### INSTRUMENT WITH opentelemetry-javaagent.jar ####
 
-#  atp-ui-otel-agent:
-#    build: atp-ui-otel-agent
-#    ports:
-#      - 9080:9080
-#    depends_on:
-#      - zookeeper
-#      - kafka
-#    environment:
-#      - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
-#      - OTEL_SERVICE_NAME=atp-ui-otel-agent
-#      - OTEL_TRACES_EXPORTER=otlp
-#      - OTEL_METRICS_EXPORTER=none
-#      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-#    volumes:
-#      - ./otel:/tmp
-#
-#  atp-posting-otel-agent:
-#    build: atp-posting-otel-agent
-#    ports:
-#      - 9087:9081
-#    depends_on:
-#      - zookeeper
-#      - kafka
-#      - postgres-atp
-#    environment:
-#      - SPRING_DATASOURCE_JDBC-URL=jdbc:postgresql://postgres-atp:5432/atpservice
-#      - SPRING_DATASOURCE_USERNAME=postgres
-#      - SPRING_DATASOURCE_PASSWORD=postgres
-#      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
-#      - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
-#      - OTEL_SERVICE_NAME=atp-posting-otel-agent
-#      - OTEL_TRACES_EXPORTER=otlp
-#      - OTEL_METRICS_EXPORTER=none
-#      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-#    volumes:
-#      - ./otel:/tmp
+  atp-ui-otel-agent:
+    build: atp-ui-otel-agent
+    ports:
+      - 9080:9080
+    depends_on:
+      - zookeeper
+      - kafka
+    environment:
+      - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
+      - OTEL_SERVICE_NAME=atp-ui-otel-agent
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    volumes:
+      - ./otel:/tmp
+
+  atp-posting-otel-agent:
+    build: atp-posting-otel-agent
+    ports:
+      - 9087:9081
+    depends_on:
+      - zookeeper
+      - kafka
+      - postgres-atp
+    environment:
+      - SPRING_DATASOURCE_JDBC-URL=jdbc:postgresql://postgres-atp:5432/atpservice
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - JAVA_TOOL_OPTIONS=-javaagent:/tmp/opentelemetry-javaagent.jar
+      - OTEL_SERVICE_NAME=atp-posting-otel-agent
+      - OTEL_TRACES_EXPORTER=otlp
+      - OTEL_METRICS_EXPORTER=none
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    volumes:
+      - ./otel:/tmp
 #
 #  compliance-preclear-otel-agent:
 #    build: compliance-preclear-otel-agent

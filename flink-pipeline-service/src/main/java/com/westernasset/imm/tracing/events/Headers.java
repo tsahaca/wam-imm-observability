@@ -9,22 +9,26 @@ import java.util.Objects;
 public class Headers {
 
     /** A Flink POJO must have public fields, or getters and setters */
-    public String tracestate;
+    public String b3;
 
     public String traceparent;
 
     /** A Flink POJO must have a no-args default constructor */
     public Headers() {}
 
-    public Headers(final String tracestate, final String traceparent) {
-        this.tracestate = tracestate;
+    public Headers(final String b3, final String traceparent) {
+        this.b3 = b3;
         this.traceparent = traceparent;
+    }
+
+    public Headers(final String b3) {
+        this.b3 = b3;
     }
 
     /** Used for printing during development */
     @Override
     public String toString() {
-        return "Headers{" + "tracestate=" + tracestate + ", traceparent='" + traceparent + '}';
+        return "Headers{" + "b3=" + b3 + ", traceparent='" + traceparent + '}';
     }
 
     @Override
@@ -36,7 +40,7 @@ public class Headers {
             return false;
         }
         Headers headers = (Headers) o;
-        return traceparent.equals(headers.tracestate) && traceparent.equals(headers.traceparent);
+        return b3.equals(headers.b3) && traceparent.equals(headers.traceparent);
     }
 
     @Override
