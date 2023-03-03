@@ -66,12 +66,18 @@ public class TradeKafkaHeadersDeserializationSchema
     @Override
     public void deserialize(ConsumerRecord<byte[], byte[]> record, Collector<EnrichedTradeVO> out)
             throws IOException {
+        Span span=addSpanToIncomingTrace(record);
+
         final TradeVO tradeVO = getTradeVO(record);
         final Metadata metadata = getMetadata(record);
         final Headers headers = getHeaders(record);
         EnrichedTradeVO  enrichedTradeVO = new EnrichedTradeVO(tradeVO, metadata, headers);
         out.collect(enrichedTradeVO);
-        addSpanToIncomingTrace(record,enrichedTradeVO);
+
+        openTelemetry.getPropagators().getTextMapPropagator()
+                .inject(Context.current(),enrichedTradeVO, setter);
+        span.end();
+
     }
 
     private TradeVO getTradeVO(ConsumerRecord<byte[], byte[]> record) throws IOException {
@@ -112,7 +118,7 @@ public class TradeKafkaHeadersDeserializationSchema
         return TypeInformation.of(EnrichedTradeVO.class);
     }
 
-    public void addSpanToIncomingTrace(ConsumerRecord<byte[], byte[]> kafkaRecord, EnrichedTradeVO enrichedTradeVO) {
+    public Span addSpanToIncomingTrace(ConsumerRecord<byte[], byte[]> kafkaRecord) {
             TracingMetadata tracingMetadata =TracingMetadata.empty();
             if (kafkaRecord.headers() != null) {
                 // Read tracing headers
@@ -158,10 +164,14 @@ public class TradeKafkaHeadersDeserializationSchema
             span.makeCurrent();
 
             // Set span onto headers
+        /**
             openTelemetry.getPropagators().getTextMapPropagator()
                     .inject(Context.current(),enrichedTradeVO, setter);
 
+
             span.end();
+         */
+        return span;
 
     }
     // tell open

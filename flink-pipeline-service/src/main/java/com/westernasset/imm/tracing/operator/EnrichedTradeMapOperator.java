@@ -25,12 +25,13 @@ public class EnrichedTradeMapOperator implements MapFunction<EnrichedTradeVO,Enr
 
     @Override
     public EnrichedTradeVO map(EnrichedTradeVO tradeVO) throws Exception {
+        Span span = addSpanToIncomingTrace(tradeVO);
         tradeVO.tradeVO.setStatus("PROCESSED_BY_FLINK");
-        addSpanToIncomingTrace(tradeVO);
+        span.end();
         return tradeVO;
     }
 
-    public void addSpanToIncomingTrace(EnrichedTradeVO tradeVO) {
+    public Span addSpanToIncomingTrace(EnrichedTradeVO tradeVO) {
         TracingMetadata tracingMetadata =TracingMetadata.empty();
         if (tradeVO.headers.traceparent != null) {
             // Read tracing headers
@@ -65,7 +66,8 @@ public class EnrichedTradeMapOperator implements MapFunction<EnrichedTradeVO,Enr
         openTelemetry.getPropagators().getTextMapPropagator()
                 .inject(Context.current(), tradeVO, setter);
 
-        span.end();
+       // span.end();
+        return span;
 
     }
 

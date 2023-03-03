@@ -38,23 +38,7 @@ public class EnrichedTradeSerializationSchema implements KafkaSerializationSchem
         this.topic=topic;
     }
 
-
-//    @Override
-//    public byte[] serialize(EnrichedTradeVO trade) {
-//        if (objectMapper == null) {
-//            objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-//            objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
-//        }
-//        try {
-//            String json = objectMapper.writeValueAsString(trade.tradeVO);
-//            return json.getBytes();
-//        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-//            log.error("Failed to parse JSON", e);
-//        }
-//        return new byte[0];
-//    }
-
-    public void addSpanToIncomingTrace(EnrichedTradeVO tradeVO, ProducerRecord<byte[], byte[]> producerRecord) {
+    public Span addSpanToIncomingTrace(EnrichedTradeVO tradeVO) {
         TracingMetadata tracingMetadata =TracingMetadata.empty();
         if (tradeVO.headers.traceparent != null) {
             // Read tracing headers
@@ -86,10 +70,13 @@ public class EnrichedTradeSerializationSchema implements KafkaSerializationSchem
         span.makeCurrent();
 
         // Set span onto headers
+        /**
         openTelemetry.getPropagators().getTextMapPropagator()
                 .inject(Context.current(), producerRecord, setter);
 
         span.end();
+        */
+        return span;
 
     }
 
@@ -138,6 +125,7 @@ public class EnrichedTradeSerializationSchema implements KafkaSerializationSchem
 
     @Override
     public ProducerRecord<byte[], byte[]> serialize(EnrichedTradeVO enrichedTradeVO, @Nullable Long aLong) {
+        Span span = addSpanToIncomingTrace(enrichedTradeVO);
 
         if (objectMapper == null) {
             objectMapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
@@ -146,7 +134,11 @@ public class EnrichedTradeSerializationSchema implements KafkaSerializationSchem
         try {
             String json = objectMapper.writeValueAsString(enrichedTradeVO.tradeVO);
             ProducerRecord<byte[], byte[]> producerRecord = new ProducerRecord<byte[], byte[]>(topic, json.getBytes(StandardCharsets.UTF_8));
-            addSpanToIncomingTrace(enrichedTradeVO, producerRecord);
+
+            openTelemetry.getPropagators().getTextMapPropagator()
+                    .inject(Context.current(), producerRecord, setter);
+            span.end();
+
             return producerRecord;
 
         } catch (com.fasterxml.jackson.core.JsonProcessingException e) {

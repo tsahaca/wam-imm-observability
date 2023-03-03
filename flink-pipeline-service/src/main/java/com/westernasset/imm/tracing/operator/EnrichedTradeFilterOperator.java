@@ -24,11 +24,16 @@ public class EnrichedTradeFilterOperator implements FilterFunction<EnrichedTrade
             openTelemetry.getTracer("com.westernasset.imm.tracing.operator.EnrichedTradeFilterOperator");
     @Override
     public boolean filter(EnrichedTradeVO tradeVO) throws Exception {
-        addSpanToIncomingTrace(tradeVO);
-        return "FIXED".equalsIgnoreCase(tradeVO.tradeVO.getTicketType());
+        Span span = addSpanToIncomingTrace(tradeVO);
+
+        boolean filter = "FIXED".equalsIgnoreCase(tradeVO.tradeVO.getTicketType());
+
+        span.end();
+
+        return filter;
     }
 
-    public void addSpanToIncomingTrace(EnrichedTradeVO tradeVO) {
+    public Span addSpanToIncomingTrace(EnrichedTradeVO tradeVO) {
         TracingMetadata tracingMetadata =TracingMetadata.empty();
         if (tradeVO.headers.traceparent != null) {
             // Read tracing headers
@@ -63,7 +68,8 @@ public class EnrichedTradeFilterOperator implements FilterFunction<EnrichedTrade
         openTelemetry.getPropagators().getTextMapPropagator()
                 .inject(Context.current(), tradeVO, setter);
 
-        span.end();
+        //span.end();
+        return span;
 
     }
 
