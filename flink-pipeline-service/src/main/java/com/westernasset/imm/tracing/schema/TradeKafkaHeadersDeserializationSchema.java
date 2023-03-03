@@ -15,10 +15,10 @@ import io.opentelemetry.api.trace.SpanKind;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.TextMapGetter;
+import io.opentelemetry.context.propagation.TextMapSetter;
 import io.opentelemetry.semconv.trace.attributes.SemanticAttributes;
 import io.smallrye.reactive.messaging.TracingMetadata;
 import io.smallrye.reactive.messaging.kafka.tracing.HeaderExtractAdapter;
-import io.smallrye.reactive.messaging.kafka.tracing.HeaderInjectAdapter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.api.common.serialization.DeserializationSchema;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
@@ -69,8 +69,9 @@ public class TradeKafkaHeadersDeserializationSchema
         final TradeVO tradeVO = getTradeVO(record);
         final Metadata metadata = getMetadata(record);
         final Headers headers = getHeaders(record);
-        out.collect(new EnrichedTradeVO(tradeVO, metadata, null));
-        incomingTrace(record);
+        EnrichedTradeVO  enrichedTradeVO = new EnrichedTradeVO(tradeVO, metadata, headers);
+        out.collect(enrichedTradeVO);
+        addSpanToIncomingTrace(record,enrichedTradeVO);
     }
 
     private TradeVO getTradeVO(ConsumerRecord<byte[], byte[]> record) throws IOException {
@@ -111,7 +112,7 @@ public class TradeKafkaHeadersDeserializationSchema
         return TypeInformation.of(EnrichedTradeVO.class);
     }
 
-    public void incomingTrace(ConsumerRecord<byte[], byte[]> kafkaRecord) {
+    public void addSpanToIncomingTrace(ConsumerRecord<byte[], byte[]> kafkaRecord, EnrichedTradeVO enrichedTradeVO) {
             TracingMetadata tracingMetadata =TracingMetadata.empty();
             if (kafkaRecord.headers() != null) {
                 // Read tracing headers
@@ -158,12 +159,12 @@ public class TradeKafkaHeadersDeserializationSchema
 
             // Set span onto headers
             openTelemetry.getPropagators().getTextMapPropagator()
-                    .inject(Context.current(), kafkaRecord.headers(), HeaderInjectAdapter.SETTER);
+                    .inject(Context.current(),enrichedTradeVO, setter);
 
             span.end();
 
     }
-
+    // tell open
     private static final TextMapGetter<ConsumerRecord<byte[], byte[]>> getter =
             new TextMapGetter<ConsumerRecord<byte[], byte[]>>() {
                 @Override
@@ -175,7 +176,7 @@ public class TradeKafkaHeadersDeserializationSchema
                 public String get(ConsumerRecord<byte[], byte[]> carrier, String key) {
 
                     String header =  getStringHeaderValue(carrier,key);
-                    log.info("TextMapGetter header.key={}, header.value={}", key, header);
+                    log.info("TradeKafkaHeadersDeserializationSchema TextMapGetter header.key={}, header.value={}", key, header);
 
                     if( null != header){
                         return header;
@@ -183,6 +184,17 @@ public class TradeKafkaHeadersDeserializationSchema
                         return "";
                     }
 
+                }
+            };
+
+    // Tell OpenTelemetry to inject the context in the EnrichedTradeVO header
+    public static final TextMapSetter<EnrichedTradeVO> setter =
+            new TextMapSetter<EnrichedTradeVO>() {
+                @Override
+                public void set(EnrichedTradeVO carrier, String key, String value) {
+                    // Insert the context as Header
+                    log.info("TradeKafkaHeadersDeserializationSchema TextMapSetter key={}, value={}", key, value);
+                    carrier.headers.traceparent=value;
                 }
             };
 }

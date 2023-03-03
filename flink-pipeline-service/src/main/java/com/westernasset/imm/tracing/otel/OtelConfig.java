@@ -13,14 +13,12 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.semconv.resource.attributes.ResourceAttributes;
 import java.util.concurrent.TimeUnit;
 
-
-
 /**
  * All SDK management takes place here, away from the instrumentation code, which should only access
  * the OpenTelemetry APIs.
  */
 public class OtelConfig {
-    private static final String SERVICE_NAME = "FLINK_TRADE_FILTER";
+    private static final String SERVICE_NAME = "FLINK_TRADE_PIPELINE_JOB";
 
     /**
      * Initializes the OpenTelemetry SDK with a logging span exporter and the W3C Trace Context
@@ -94,4 +92,6 @@ public class OtelConfig {
 
         return openTelemetry;
     }
+
+
 }
