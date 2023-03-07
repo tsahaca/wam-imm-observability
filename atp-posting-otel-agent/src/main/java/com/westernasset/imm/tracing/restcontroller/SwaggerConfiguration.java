@@ -10,15 +10,15 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class SwaggerConfiguration {
-    private static final String TITLE = "Customer Service";
-    private static final String DESCRIPTION = "Application used for customer service";
+    private static final String TITLE = "ATP POsting Otel Agent";
+    private static final String DESCRIPTION = "Application used for ATP POsting Otel Agent";
     private static final String VERSION = "1.0";
-    private static final String URL = "https://github.com/wenqiglantz";
+    private static final String URL = "https://github.com/tsahaca";
 
     @Bean
     public GroupedOpenApi api() {
         return GroupedOpenApi.builder()
-                .group("customerservice")
+                .group("atp-posting-otel-agent")
                 .pathsToMatch("/**")
                 .build();
     }
@@ -31,7 +31,7 @@ public class SwaggerConfiguration {
                         .version(VERSION)
                         .license(new License().name("Apache 2.0").url(URL)))
                 .externalDocs(new ExternalDocumentation()
-                        .description("Customer service Wiki Documentation")
-                        .url("https://github.com/wenqiglantz"));
+                        .description("ATP POsting Otel Agent service Wiki Documentation")
+                        .url("https://github.com/tsahaca"));
     }
 }

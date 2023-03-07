@@ -13,7 +13,7 @@ public class SwaggerConfiguration {
     private static final String TITLE = "Compliance PreClear Service";
     private static final String DESCRIPTION = "Application used to Pre Clear Trade";
     private static final String VERSION = "1.0";
-    private static final String URL = "www.github.com/wenqiglantz";
+    private static final String URL = "www.github.com/tsahaca";
 
     @Bean
     public GroupedOpenApi api() {
@@ -32,6 +32,6 @@ public class SwaggerConfiguration {
                         .license(new License().name("Apache 2.0").url(URL)))
                 .externalDocs(new ExternalDocumentation()
                         .description("Order service Wiki Documentation")
-                        .url("https://www.github.com/wenqiglantz"));
+                        .url("https://www.github.com/tsahaca"));
     }
 }

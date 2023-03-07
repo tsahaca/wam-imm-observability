@@ -26,6 +26,8 @@ public class EnrichedTradeMapOperator implements MapFunction<EnrichedTradeVO,Enr
     @Override
     public EnrichedTradeVO map(EnrichedTradeVO tradeVO) throws Exception {
         Span span = addSpanToIncomingTrace(tradeVO);
+        span.setAttribute("pf_number", tradeVO.tradeVO.getPfNumber());
+
         tradeVO.tradeVO.setStatus("PROCESSED_BY_FLINK");
         span.end();
         return tradeVO;

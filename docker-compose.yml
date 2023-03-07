@@ -160,9 +160,9 @@ services:
 #        - OTEL_TRACES_EXPORTER=otlp
 #        - OTEL_METRICS_EXPORTER=none
 #        - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-        - OTEL_PROPAGATORS=tracecontext,b3
-      volumes:
-        - ./otel:/tmp
+#        - OTEL_PROPAGATORS=tracecontext,b3
+#      volumes:
+#        - ./otel:/tmp
   ############# END OF INFRASTRUCTURE ##############
 
 #  atp-ui-service:
